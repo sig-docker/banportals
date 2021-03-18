@@ -24,10 +24,18 @@
         value: "{{ item.value }}"
       with_dict:
         url: "{{ lookup('env', 'JDBC_URL') }}"
-        password: "{{ lookup('env', 'JDBC_PASSWORD') }}"
         initial-pool-size: "{{ lookup('env', 'JDBC_INITIAL_POOL_SIZE') }}"
         min-pool-size: "{{ lookup('env', 'JDBC_MIN_POOL_SIZE') }}"
         max-pool-size: "{{ lookup('env', 'JDBC_MAX_POOL_SIZE') }}"
+
+    - name: Configure connection pool password
+      xml:
+        path: "{{ tomcat_root }}/webapps/banportals/META-INF/SharedPool_config.xml"
+        pretty_print: yes
+        xpath: /ucp-properties/connection-pool
+        attribute: password
+        value: "{{ lookup('env', 'JDBC_PASSWORD') }}"
+      no_log: yes
 
     - name: Configure data provider
       lineinfile:
@@ -36,7 +44,6 @@
         line: "{{ item.key }}={{ item.value }}"
       with_dict:
         providerServlet.url: "{{ lookup('env', 'PROVIDER_SERVLET_URL') }}"
-        providerServlet.password: "{{ lookup('env', 'PROVIDER_SERVLET_PASSWORD') }}"
         default.sourceInfo: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_SOURCE_INFO') }}"
         default.externalSystemId: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_EXTERNAL_SYSTEM_ID') }}"
         default.userName: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_USER_NAME') }}"
@@ -45,8 +52,16 @@
         default.focused: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_FOCUSED') }}"
         default.subscriberId: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_SUBSCRIBER_ID') }}"
 
+    - name: Configure data provider password
+      lineinfile:
+        path: "{{ tomcat_root }}/webapps/banportals/WEB-INF/classes/com/sct/banner/portals/providers/properties/BannerDataProviderConfig.properties"
+        regexp: "^providerServlet.password\\s*="
+        line: "providerServlet.password={{ lookup('env', 'PROVIDER_SERVLET_PASSWORD') }}"    
+      no_log: yes
+      
     - name: Configure Connection properties
       lineinfile:
         path: "{{ tomcat_root }}/webapps/banportals/WEB-INF/classes/properties/Connection.properties"
         regexp: "^providerServlet.password\\s*="
         line: "providerServlet.password={{ lookup('env', 'PROVIDER_SERVLET_PASSWORD') }}"
+      no_log: yes

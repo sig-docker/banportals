@@ -1,0 +1,52 @@
+---
+- hosts: localhost
+
+  tasks:
+    - name: Check for required environment variables
+      fail:
+        msg: "Required environment variable {{ item }} is not defined"
+      when: lookup('env', item) | default('') == ''
+      loop:
+        - JDBC_URL
+        - JDBC_PASSWORD
+        - JDBC_INITIAL_POOL_SIZE
+        - JDBC_MIN_POOL_SIZE
+        - JDBC_MAX_POOL_SIZE
+        - PROVIDER_SERVLET_URL
+        - PROVIDER_SERVLET_PASSWORD
+
+    - name: Configure connection pool
+      xml:
+        path: "{{ tomcat_root }}/webapps/banportals/META-INF/SharedPool_config.xml"
+        pretty_print: yes
+        xpath: /ucp-properties/connection-pool
+        attribute: "{{ item.key }}"
+        value: "{{ item.value }}"
+      with_dict:
+        url: "{{ lookup('env', 'JDBC_URL') }}"
+        password: "{{ lookup('env', 'JDBC_PASSWORD') }}"
+        initial-pool-size: "{{ lookup('env', 'JDBC_INITIAL_POOL_SIZE') }}"
+        min-pool-size: "{{ lookup('env', 'JDBC_MIN_POOL_SIZE') }}"
+        max-pool-size: "{{ lookup('env', 'JDBC_MAX_POOL_SIZE') }}"
+
+    - name: Configure data provider
+      lineinfile:
+        path: "{{ tomcat_root }}/webapps/banportals/WEB-INF/classes/com/sct/banner/portals/providers/properties/BannerDataProviderConfig.properties"
+        regexp: "^{{ item.key }}\\s*=\\s*"
+        line: "{{ item.key }}={{ item.value }}"
+      with_dict:
+        providerServlet.url: "{{ lookup('env', 'PROVIDER_SERVLET_URL') }}"
+        providerServlet.password: "{{ lookup('env', 'PROVIDER_SERVLET_PASSWORD') }}"
+        default.sourceInfo: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_SOURCE_INFO') }}"
+        default.externalSystemId: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_EXTERNAL_SYSTEM_ID') }}"
+        default.userName: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_USER_NAME') }}"
+        default.immutableId: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_IMMUTABLE_ID') }}"
+        default.mode: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_MODE') }}"
+        default.focused: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_FOCUSED') }}"
+        default.subscriberId: "{{ lookup('env', 'PROVIDER_SERVLET_DEFAULT_SUBSCRIBER_ID') }}"
+
+    - name: Configure Connection properties
+      lineinfile:
+        path: "{{ tomcat_root }}/webapps/banportals/WEB-INF/classes/properties/Connection.properties"
+        regexp: "^providerServlet.password\\s*="
+        line: "providerServlet.password={{ lookup('env', 'PROVIDER_SERVLET_PASSWORD') }}"

@@ -21,6 +21,7 @@ ADD ${ojdbc_url}/xml/xdb/${ojdbc_ver}/xdb-${ojdbc_ver}.jar ${tomcat_lib}/xdb.jar
 ADD ${ojdbc_url}/jdbc/ucp/${ojdbc_ver}/ucp-${ojdbc_ver}.jar ${tomcat_lib}/ucp.jar
 
 COPY banportals_ansible.sh /run.d/
+COPY banportals-playbook.yml /ansible/
 
 SHELL ["/bin/bash", "-c"]
 RUN cd /usr/local/tomcat/webapps && \
